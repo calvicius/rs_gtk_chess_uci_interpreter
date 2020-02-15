@@ -46,7 +46,7 @@ impl Engine {
   
   pub fn get_handshake (&mut self) {
     let vec_gu8 = self.motor.get_stdout_pipe().unwrap()
-        .read_bytes(8192, None::<&gio::Cancellable>).unwrap();
+        .read_bytes(1024, None::<&gio::Cancellable>).unwrap();
     let uci_response = self.read_left_output_no_moves(vec_gu8);
     let buffer = self.visor.get_buffer()
         .expect("error al crear el buffer");
@@ -64,7 +64,7 @@ impl Engine {
     let _i = self.motor.get_stdin_pipe().unwrap()
         .write_all(s, None::<&gio::Cancellable>).unwrap();
     let vec_gu8 = self.motor.get_stdout_pipe().unwrap()
-        .read_bytes(8192, None::<&gio::Cancellable>).unwrap();
+        .read_bytes(1024, None::<&gio::Cancellable>).unwrap();
     let uci_response = self.read_left_output_no_moves(vec_gu8);
     let buffer = self.visor.get_buffer()
         .expect("error al crear el buffer");
@@ -83,7 +83,7 @@ impl Engine {
     let _i = self.motor.get_stdin_pipe().unwrap()
         .write_all(s, None::<&gio::Cancellable>).unwrap();
     let vec_gu8 = self.motor.get_stdout_pipe().unwrap()
-        .read_bytes(8192, None::<&gio::Cancellable>).unwrap();
+        .read_bytes(4096, None::<&gio::Cancellable>).unwrap();
     let uci_response = self.read_left_output_no_moves(vec_gu8);
     let buffer = self.visor.get_buffer()
         .expect("error al crear el buffer");
@@ -168,10 +168,10 @@ impl Engine {
   fn write_moves_stdout (&mut self) {
     loop {
       let vec_gu8 = self.motor.get_stdout_pipe().unwrap()
-            .read_bytes(4096, None::<&gio::Cancellable>).unwrap();
+            .read_bytes(1024, None::<&gio::Cancellable>).unwrap();
       let fin = self.read_left_output(vec_gu8);
       
-      thread::sleep(Duration::from_millis(100));
+      //thread::sleep(Duration::from_millis(100));
       if fin {
         break
       }
@@ -214,7 +214,10 @@ impl Engine {
           tx.send(linea).unwrap();
         });
         let linea = rx.recv().unwrap();
-        
+        if linea.contains("Mate") {
+          self.set_stop();
+          thread::sleep(Duration::from_millis(100));
+        }
         if linea.len() > 2 {
           let mut iter = buffer.get_end_iter();
           buffer.insert(&mut iter, &linea);
@@ -227,7 +230,7 @@ impl Engine {
           while gtk::events_pending() {
             gtk::main_iteration();
           }
-          if linea.contains("Mejor") {
+          if linea.contains("Mejor") {  // || linea.contains("Mate") {
             fin_analisis = true;
             break
           }
@@ -236,6 +239,22 @@ impl Engine {
         s.clear();
       }
     }
+    /*
+    if fin_analisis {
+      self.set_stop();
+      let abandon = self.motor.get_stdout_pipe().unwrap().is_closed();
+      let abandon = self.motor.get_stdout_pipe().unwrap()
+        .clear_pending();
+      println!("{:?}", abandon);
+      /*
+      // escribimos algo que no sea visible
+      let _i = self.motor.get_stdin_pipe().unwrap()
+        .write_all(b"\n", None::<&gio::Cancellable>).unwrap();
+      let _ = self.motor.get_stdout_pipe().unwrap()
+               .read_bytes(4096, None::<&gio::Cancellable>).unwrap();
+      */
+    }
+    */
     fin_analisis
   }
 }
@@ -254,8 +273,12 @@ fn write_pretty(linea: String) -> String {
         retorno = format!("Depth: {} ", &lin_vec[i]);
       }
       if lin_vec[i-1] == "cp" {
-        let entero = lin_vec[i].parse::<f32>().unwrap() / 100.0;
-        retorno = format!("{}\tEval.:\t{:>6.2} ", retorno, entero);
+        let eval = lin_vec[i].parse::<f32>().unwrap() / 100.0;
+        retorno = format!("{}\tEval.:\t{:>6.2} ", retorno, eval);
+      }
+      if lin_vec[i-1] == "mate" {
+        //let entero = lin_vec[i].parse::<i32>().unwrap();
+        retorno = format!("{}\tMate:\t{:>6} ", retorno, lin_vec[i]);
       }
       if lin_vec[i-1] == "pv" {
         retorno = format!("{}\tMoves.: ", retorno);
@@ -265,8 +288,8 @@ fn write_pretty(linea: String) -> String {
         retorno = format!("{} {} ", retorno, &lin_vec[i]);
       }
     }
-    //
-    if movs {
+    
+    if movs || retorno.contains("Mate") {
       retorno = retorno.trim().to_string();
       retorno = format!("{}\n", retorno);
       return retorno;

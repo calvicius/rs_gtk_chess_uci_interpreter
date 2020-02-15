@@ -56,7 +56,9 @@ fn activar (application: &gtk::Application) {
     combo.append_text("r2r2k1/pp3pbp/2p1b1p1/2Pn1p2/P2P4/3BP1P1/1B1N1P1P/2R2RK1 w - - 0 21");
     combo.append_text("r5k1/p1r2pbp/1pp1b1p1/2Pn1p2/P2P4/1N2P1P1/4BP1P/BR3RK1 b - - 0 26");
     combo.append_text("r1b1r1k1/5q1p/p1p1p1pQ/1pP1Rp2/3P4/P7/BP3PPP/4R1K1 w - - 0 28");
-    combo.append_text("8/8/8/5R2/3k1p2/5P1P/1r4P1/6K1 b - - 0 52");
+    combo.append_text("r2q1b1r/pp1b2pp/2p5/2kNP3/8/3Q4/PPP2PPP/R1B3K1 w - - 0 17");
+    combo.append_text("rnb4r/pppp2pp/7k/6Qn/3PP2B/2N5/PPP4P/R3K3 b Q - 0 15");
+    combo.append_text("r1bk1r2/ppp1n2p/1b1p3Q/6B1/2B2P2/8/P5PP/qN3R1K w - - 0 18");
     hbox.pack_start(&combo, false, false, 0);
     
     let btn_depth = gtk::Button::new_with_label("Analysis sel. FEN and given depth");
@@ -71,7 +73,7 @@ fn activar (application: &gtk::Application) {
     window.show_all();
     
     engine.get_handshake();
-    /* engine.get_uci_options(); */
+    engine.get_uci_options();
     // an example to change default engine options
     /* engine.set_options(b"setoption name MultiPV value 10\n"); */
     
